@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 const { Schema, model } = mongoose;
 
-const typesSchema = new Schema({
+const roleSchema = new Schema({
     name: String
-}); 
+});
 
-export const Types = model('Types', typesSchema);
+export const Roles = model("Roles", roleSchema);

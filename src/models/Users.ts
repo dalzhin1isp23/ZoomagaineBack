@@ -1,14 +1,23 @@
-import { Schema, model } from 'mongoose';
+import mongoose from "mongoose";
+const { Schema, model } = mongoose;
 
 const userSchema = new Schema({
-  login: { type: String, required: true },
-  password: { type: String, required: true },
   phone: String,
   role: { 
     type: Schema.Types.ObjectId,
-    ref:"Role",
-    default: 1 },
-  status: { type: String, default: 'active' }
-});
+    ref: "Roles",
+    required: true
+  },
+  status: { 
+    type: String, 
+    default: 'active',
+    enum: ['active', 'blocked', 'pending', 'deleted']
+  },
+  mail: {
+    type: String,
+    lowercase: true,
+    trim: true
+  }
+}, { timestamps: true });
 
 export const Users = model('Users', userSchema);

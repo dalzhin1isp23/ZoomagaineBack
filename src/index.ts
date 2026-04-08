@@ -1,42 +1,121 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
-import * as Models from './models'; 
+import dotenv from 'dotenv';
+import cors, { CorsOptions } from 'cors';  
+import authRouter from './utils/router';
+dotenv.config();
 
 const app = express();
-app.use(express.json());
 
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8000;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/myapp';
 
-app.get('/api/:modelName', async (req, res) => {
-    try {
-        const { modelName } = req.params;
-        
 
-        const Model = (Models as any)[modelName];
-        
-        if (!Model) {
-            return res.status(404).json({ error: `Модель ${modelName} не найдена` });
-        }
+const corsOptions: CorsOptions = {
 
-        const data = await Model.find().lean();
-        res.json(data);
-    } catch (error) {
-        res.status(500).json({ error: "Ошибка сервера" });
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+
+    ];
+    
+  
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`🚫 CORS blocked: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
     }
+  },
+  
+
+  credentials: true,
+  
+
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  
+
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Accept',
+    'Origin'
+  ],
+  
+
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  
+
+  maxAge: 600, 
+  
+ 
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+
+app.get('/', (req: Request, res: Response) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'ZooBack API is running', 
+    timestamp: new Date().toISOString() 
+  });
 });
 
-async function startApp() {
-    try {
-        await mongoose.connect('mongodb://127.0.0.1:27017/pet_shop');
-        console.log(" База данных подключена");
 
-        app.listen(PORT, () => {
-            console.log(`API запущен на http://localhost:${PORT}`);
-            console.log(`Доступные модели: ${Object.keys(Models).join(', ')}`);
-        });
-    } catch (error) {
-        console.error("Ошибка запуска:", error);
+app.use('/api/auth', authRouter);
+
+
+
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    status: 'error',
+    message: `Route ${req.method} ${req.originalUrl} not found`
+  });
+});
+
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error(`[ERROR] ${new Date().toISOString()} | ${req.method} ${req.originalUrl}`, err);
+
+  const statusCode = err.statusCode || err.status || 500;
+  const message = err.message || 'Внутренняя ошибка сервера';
+  const isDev = process.env.NODE_ENV === 'development';
+  
+  res.status(statusCode).json({
+    status: 'error',
+    message,
+    ...(isDev && { stack: err.stack, details: err.details })
+  });
+});
+
+
+const startServer = async () => {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    console.log(' Connected to MongoDB');
+
+    app.listen(PORT, () => {
+      console.log(` Server listening on port ${PORT}`);
+      console.log(` API available at http://localhost:${PORT}/api`);
+      console.log(` CORS allowed for: localhost:5173`);
+    });
+
+  } catch (error) {
+    console.error(' Failed to start server:', error);
+    
+    if (error instanceof mongoose.Error || (error as any).code === 'ECONNREFUSED') {
+      console.log(' Retrying MongoDB connection in 5s...');
+      setTimeout(startServer, 5000);
+    } else {
+      process.exit(1);
     }
-}
+  }
+};
 
-startApp();
+startServer();

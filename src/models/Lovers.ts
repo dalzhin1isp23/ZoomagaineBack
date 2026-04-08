@@ -1,13 +1,15 @@
-import { Schema,model } from "mongoose";
+import mongoose from "mongoose";
+const { Schema, model } = mongoose;
 
-const loversSchema=new Schema({
-    user:{
+const loversSchema = new Schema({
+    user: {
         type: Schema.Types.ObjectId, 
-        ref:"Users"
+        ref: "Users"
     },
-    product:{
+    product: {
         type: Schema.Types.ObjectId, 
-        ref:"Products"
+        ref: "Products"
     }
-})
-export const Lovers = model("Lovers",loversSchema)
+});
+
+export const Lovers = model("Lovers", loversSchema);

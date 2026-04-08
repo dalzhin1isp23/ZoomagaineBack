@@ -1,4 +1,5 @@
-import { Schema,model } from "mongoose";
+import mongoose from "mongoose";
+const { Schema, model } = mongoose;
 
 const orderSchema = new Schema({
   user: { 
@@ -9,22 +10,21 @@ const orderSchema = new Schema({
   products: [{
     product: { 
       type: Schema.Types.ObjectId, 
-      ref: 'Product'
+      ref: 'Products'  // ← Исправлено: было 'Product', должно совпадать с именем модели
     },
     quantity: Number
   }],
-  count:Number,
-  sum:Number,
-  payed:{type:Boolean , default:false},
-  dateArrivedPoint:String,
-  dateSending:String,
-  dateFinal:String,
-  adressPoint:String,
-  status:{
-    type:Schema.Types.ObjectId,
-    ref:"Status"
+  count: Number,
+  sum: Number,
+  payed: { type: Boolean, default: false },
+  dateArrivedPoint: String,
+  dateSending: String,
+  dateFinal: String,
+  adressPoint: String,
+  status: {
+    type: Schema.Types.ObjectId,
+    ref: "Status"
   },
-
-
 });
-export const Orders = model("Orders",orderSchema)
+
+export const Orders = model("Orders", orderSchema);

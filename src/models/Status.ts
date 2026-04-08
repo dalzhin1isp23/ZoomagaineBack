@@ -1,5 +1,8 @@
-import { Schema,model,models } from "mongoose";
+import mongoose from "mongoose";
+const { Schema, model } = mongoose;
+
 const statusSchema = new Schema({
-    name:String
-})
-export const Status=model('Status',statusSchema);
+    name: String
+});
+
+export const Status = model('Status', statusSchema);
