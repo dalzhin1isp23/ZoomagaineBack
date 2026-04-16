@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { body, validationResult } from 'express-validator';
-import * as authService from '../service/authService';
-import AppError from '../../utils/AppError';
+import * as authService from '../../service/authService';
+import AppError from '../../../utils/AppError';
 
 export const registerValidation = [
   body('login').trim().notEmpty().withMessage('Логин обязателен'),

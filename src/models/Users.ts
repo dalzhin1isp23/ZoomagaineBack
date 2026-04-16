@@ -11,7 +11,7 @@ const userSchema = new Schema({
   status: { 
     type: String, 
     default: 'active',
-    enum: ['active', 'blocked', 'pending', 'deleted']
+    enum: ['active', 'blocked', 'pending']
   },
   mail: {
     type: String,
