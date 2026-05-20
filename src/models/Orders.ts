@@ -10,7 +10,7 @@ const orderSchema = new Schema({
   products: [{
     product: { 
       type: Schema.Types.ObjectId, 
-      ref: 'Products'  // ← Исправлено: было 'Product', должно совпадать с именем модели
+      ref: 'Products'  
     },
     quantity: Number
   }],

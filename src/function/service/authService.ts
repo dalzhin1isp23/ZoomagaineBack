@@ -122,10 +122,21 @@ export const login = async (login: string, password: string) => {
 
 export const getUserByToken = async (userId: string) => {
   const user = await Users.findById(userId).populate('role', 'name');
+  const auth = await Authorithation.findOne({user:userId});
   if (!user) {
     throw new AppError('Пользователь не найден', 404);
   }
-  return user;
+ return {
+
+      _id: user._id,
+      mail: user.mail,
+      phone: user.phone,
+      role: user.role,
+      status: user.status,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      login: auth?.login || '',           
+    };
 };
 
 export const isAdmin = async (userId: string): Promise<boolean> => {

@@ -17,6 +17,9 @@ const userSchema = new Schema({
     type: String,
     lowercase: true,
     trim: true
+  },
+    notifications: {
+    discounts: { type: Boolean, default: true } 
   }
 }, { timestamps: true });
 

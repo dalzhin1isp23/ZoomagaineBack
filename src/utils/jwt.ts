@@ -1,22 +1,20 @@
 import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 
-interface IPayload {
-  userId: Types.ObjectId;
+export interface IPayload {
+  userId: string;
   login: string;
-  role?: Types.ObjectId;
+  role?: string;
 }
 
-export const createJWT = (payload: IPayload): string => {
+export const createJWT = (payload: { userId: string | import('mongoose').Types.ObjectId; login: string; role?: string | import('mongoose').Types.ObjectId }): string => {
   return jwt.sign(
     {
-      userId: payload.userId,
+      userId: payload.userId.toString(),
       login: payload.login,
-      role: payload.role
+      role: payload.role?.toString(),
     },
-    process.env.JWT_SECRET as string,
-    {
-      expiresIn: process.env.JWT_EXPIRE || '1d'
-    }
+    process.env.JWT_SECRET!,
+    { expiresIn: process.env.JWT_EXPIRE || '1d' }
   );
 };
