@@ -9,6 +9,7 @@ export interface CreateProductData {
   type?: string | null;
   remains?: number;
   discount?: number;
+  isVetMedicine?: boolean; 
   category?: string | null;
   images?: Array<{ url: string; isMain?: boolean; altText?: string }>;
 }
@@ -33,6 +34,12 @@ export class AdminProductService {
 
     if (query.type && mongoose.Types.ObjectId.isValid(query.type)) {
       filter.type = query.type;
+    }
+
+    if (query.isVetMedicine === 'true') {
+      filter.isVetMedicine = true;
+    } else if (query.isVetMedicine === 'false') {
+      filter.isVetMedicine = false;
     }
 
     if (query.status === 'low') {
@@ -66,7 +73,6 @@ export class AdminProductService {
       },
     };
   }
-
 
   async getProductById(id: string) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -112,6 +118,7 @@ export class AdminProductService {
   async createProduct(data: CreateProductData) {
     const product = new Products({
       ...data,
+      isVetMedicine: data.isVetMedicine || false,
       category: data.category || null,
       type: data.type || null,
       images: data.images || [],

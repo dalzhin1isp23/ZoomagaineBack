@@ -50,6 +50,7 @@ export const createAdminProduct = async (req: Request, res: Response, next: Next
       price,
       remains: Number(body.remains) || 0,
       discount: Number(body.discount) || 0,
+      isVetMedicine: body.isVetMedicine === 'true' || body.isVetMedicine === true, 
       images: []
     };
 
@@ -97,6 +98,11 @@ export const updateAdminProduct = async (req: Request, res: Response, next: Next
     if (body.discount !== undefined) {
       const discount = Number(body.discount);
       if (!isNaN(discount) && discount >= 0 && discount <= 100) updateData.discount = discount;
+    }
+    
+
+    if (body.isVetMedicine !== undefined) {
+      updateData.isVetMedicine = body.isVetMedicine === 'true' || body.isVetMedicine === true;
     }
 
     if (body.category !== undefined) {
@@ -199,7 +205,6 @@ export const setMainImage = async (req: Request, res: Response, next: NextFuncti
     if (!imageUrl) {
       return res.status(400).json({ success: false, message: 'URL изображения не указан' });
     }
-
 
     const product = await adminProductService.getProductByIdRaw(id);
     
