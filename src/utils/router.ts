@@ -1,6 +1,6 @@
 import express from 'express';
 import { protect, requireAdmin } from '../function/middleware/middleware';
-import { petUpload } from '../function/middleware/upload';
+import { petUpload, productUpload, productMultipleUpload } from '../function/middleware/upload';
 
 import { register, login, getMe, assignRole, registerValidation, loginValidation } from '../function/controller/profile/authController';
 import { toggleFavorite, getFavorites } from "../function/controller/profile/favoritesController";
@@ -12,18 +12,33 @@ import { getProductDetails } from '../function/controller/product/productDetailC
 import { getCategories } from '../function/controller/product/categoryController';
 import { getTypes } from '../function/controller/product/typeController';
 
+// Admin product controllers
+import { 
+  getAdminProducts, 
+  getAdminProductById, 
+  createAdminProduct, 
+  updateAdminProduct, 
+  deleteAdminProduct,
+  uploadProductImages,
+  removeProductImage,
+  setMainImage
+} from '../function/controller/admin/productController';
+
 const router = express.Router();
 
+// Public auth routes
 router.post('/auth/register', registerValidation, register);
 router.post('/auth/login', loginValidation, login);
 router.get('/auth/me', protect, getMe);
 router.post('/auth/assign-role', protect, requireAdmin, assignRole);
 
+// Public product routes
 router.get('/products', getProducts);
 router.get('/products/:id', getProductDetails);
 router.get('/categories', getCategories);
 router.get('/types', getTypes);
 
+// Protected user routes
 router.get('/favorites', protect, getFavorites);
 router.post('/favorites/:productId', protect, toggleFavorite);
 
@@ -42,5 +57,20 @@ router.delete('/orders/:orderId', protect, removeOrder);
 router.get('/profile', protect, getProfile);
 router.patch('/profile', protect, updateProfileValidation, updateProfile);
 router.post('/logout', protect, logout);
+
+// Admin routes — products management
+router.get('/admin/products', protect, requireAdmin, getAdminProducts);
+router.get('/admin/products/:id', protect, requireAdmin, getAdminProductById);
+
+// ← КРИТИЧНО: multer парсит multipart/form-data в req.body и req.files
+router.post('/admin/products', protect, requireAdmin, productMultipleUpload.array('images', 10), createAdminProduct);
+
+router.put('/admin/products/:id', protect, requireAdmin, updateAdminProduct);
+router.delete('/admin/products/:id', protect, requireAdmin, deleteAdminProduct);
+
+// Image management routes
+router.post('/admin/products/:id/images', protect, requireAdmin, productMultipleUpload.array('images', 10), uploadProductImages);
+router.delete('/admin/products/:id/images', protect, requireAdmin, removeProductImage);
+router.patch('/admin/products/:id/main-image', protect, requireAdmin, setMainImage);
 
 export default router;

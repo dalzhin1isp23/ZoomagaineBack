@@ -15,6 +15,7 @@ declare global {
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
   try {
     let token: string | undefined;
+    
     if (req.headers.authorization?.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
     }
@@ -23,7 +24,14 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
       throw new AppError('Пожалуйста, войдите в систему', 401);
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+    const jwtSecret = process.env.JWT_SECRET;
+    
+    if (!jwtSecret) {
+      console.error('[AUTH] JWT_SECRET is not defined in environment variables');
+      throw new AppError('Серверная ошибка конфигурации', 500);
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as {
       authId: string;
       login: string;
       userId: string;
@@ -41,6 +49,8 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     
     next();
   } catch (err: any) {
+    console.error('[AUTH] protect middleware error:', err.name, err.message);
+    
     if (err.name === 'JsonWebTokenError') {
       return next(new AppError('Недействительный токен', 401));
     }

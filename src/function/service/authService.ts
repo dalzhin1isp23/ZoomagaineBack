@@ -5,14 +5,12 @@ import { Users } from '../../models/Users';
 import { Roles } from '../../models/Roles';
 import AppError from '../../utils/AppError';
 
-const ROLE_IDS = {
-  ADMIN: '2',
-  USER: '1',
-  DILEVERY: '3',
-  HELPER: '4'
-};
-
 export const createJWT = (payload: { authId: string; login: string; userId: string; role?: string }): string => {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET is not configured');
+  }
+  
   return jwt.sign(
     {
       authId: payload.authId,
@@ -20,7 +18,7 @@ export const createJWT = (payload: { authId: string; login: string; userId: stri
       userId: payload.userId,
       role: payload.role
     },
-    process.env.JWT_SECRET as string,
+    jwtSecret,
     { expiresIn: process.env.JWT_EXPIRE || '1d' }
   );
 };
@@ -61,7 +59,7 @@ export const register = async (
     authId: auth._id.toString(),
     login: auth.login,
     userId: user._id.toString(),
-    role: user.role?.toString()
+    role: defaultRole.name
   });
 
   return {
@@ -69,14 +67,17 @@ export const register = async (
       _id: user._id.toString(),
       mail: user.mail,
       phone: user.phone,
-      role: user.role?.toString()
+      role: defaultRole.name
     },
     token
   };
 };
 
 export const login = async (login: string, password: string) => {
-  const auth = await Authorithation.findOne({ login }).select('+password').populate('user');
+  const auth = await Authorithation.findOne({ login })
+    .select('+password')
+    .populate('user', 'mail phone status role')
+    .populate('user.role', 'name');
   
   if (!auth) {
     throw new AppError('Неверный логин или пароль', 401);
@@ -101,11 +102,13 @@ export const login = async (login: string, password: string) => {
   auth.lastLogin = new Date();
   await auth.save();
 
+  const roleName = auth.user.role?.name || 'user';
+
   const token = createJWT({
     authId: auth._id.toString(),
     login: auth.login,
     userId: auth.user._id.toString(),
-    role: auth.user.role?.toString()
+    role: roleName
   });
 
   return {
@@ -113,7 +116,7 @@ export const login = async (login: string, password: string) => {
       _id: auth.user._id.toString(),
       mail: auth.user.mail,
       phone: auth.user.phone,
-      role: auth.user.role?.toString(),
+      role: roleName,
       status: auth.user.status
     },
     token
@@ -122,29 +125,30 @@ export const login = async (login: string, password: string) => {
 
 export const getUserByToken = async (userId: string) => {
   const user = await Users.findById(userId).populate('role', 'name');
-  const auth = await Authorithation.findOne({user:userId});
+  const auth = await Authorithation.findOne({ user: userId });
+  
   if (!user) {
     throw new AppError('Пользователь не найден', 404);
   }
- return {
-
-      _id: user._id,
-      mail: user.mail,
-      phone: user.phone,
-      role: user.role,
-      status: user.status,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      login: auth?.login || '',           
-    };
+  
+  return {
+    _id: user._id,
+    mail: user.mail,
+    phone: user.phone,
+    role: user.role,
+    status: user.status,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    login: auth?.login || '',
+  };
 };
 
 export const isAdmin = async (userId: string): Promise<boolean> => {
-  const user = await Users.findById(userId).populate('role');
-  if (!user) return false;
+  const user = await Users.findById(userId).populate('role', 'name');
+  if (!user || !user.role) return false;
   
-  const roleId = user.role?._id?.toString() || user.role?.toString();
-  return roleId === ROLE_IDS.ADMIN;
+  const roleName = user.role.name?.toLowerCase();
+  return roleName === 'admin';
 };
 
 export const assignRole = async (
