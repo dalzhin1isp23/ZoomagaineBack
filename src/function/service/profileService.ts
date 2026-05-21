@@ -4,6 +4,8 @@ import { Users } from '../../models/Users';
 import { Authorithation } from '../../models/Authorithation';
 import { Pet } from '../../models/Pets';
 import { Orders } from '../../models/Orders';
+import { Lovers } from '../../models/Lovers'; 
+import { Products } from '../../models/Products';
 
 const validateLogin = (login: string): string | null => {
   if (!login || login.trim().length < 3) return 'Логин должен содержать минимум 3 символа';
@@ -139,25 +141,48 @@ export const favAddPet = async (petId: string, productId: string, reason?: strin
   return pet;
 };
 
+
 export const getFavorites = async (userId: string) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Неверный ID пользователя', 400);
-  const user = await Users.findById(userId).populate({ path: 'favorites', populate: { path: 'product', select: 'name price photoUrl' } }).select('favorites').lean();
-  if (!user) throw new AppError('Пользователь не найден', 404);
-  return user.favorites || [];
+  
+  const favorites = await Lovers.find({ user: userId })
+    .populate({
+      path: 'product',
+      select: 'name description price discount remains images category type',
+      populate: [
+        { path: 'category', select: 'name' },
+        { path: 'type', select: 'name' }
+      ]
+    })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return favorites.map((fav: any) => fav.product).filter(Boolean);
 };
 
 export const favoriteToggle = async (userId: string, productId: string) => {
-  if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(productId)) throw new AppError('Неверный ID', 400);
-  const user = await Users.findById(userId);
-  if (!user) throw new AppError('Пользователь не найден', 404);
-  const favoriteIndex = user.favorites?.findIndex((f: any) => f.toString() === productId);
-  if (favoriteIndex !== undefined && favoriteIndex !== -1) {
-    user.favorites.splice(favoriteIndex, 1);
-  } else {
-    if (!user.favorites) user.favorites = [];
-    user.favorites.push(productId);
+  if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(productId)) {
+    throw new AppError('Неверный ID', 400);
   }
-  await user.save();
+  
+
+  const product = await Products.findById(productId);
+  if (!product) {
+    throw new AppError('Товар не найден', 404);
+  }
+  
+
+  const existing = await Lovers.findOne({ user: userId, product: productId });
+  
+  if (existing) {
+    
+    await Lovers.findByIdAndDelete(existing._id);
+  } else {
+
+    await Lovers.create({ user: userId, product: productId });
+  }
+  
+ 
   return getFavorites(userId);
 };
 

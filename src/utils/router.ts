@@ -3,7 +3,7 @@ import { protect, requireAdmin } from '../function/middleware/middleware';
 import { petUpload, productUpload, productMultipleUpload } from '../function/middleware/upload';
 
 import { register, login, getMe, assignRole, registerValidation, loginValidation } from '../function/controller/profile/authController';
-import { toggleFavorite, getFavorites } from "../function/controller/profile/favoritesController";
+import { toggleFavorite, getFavorites, toggleFavoriteValidation } from "../function/controller/profile/favoritesController"; // ← ИМПОРТ ВАЛИДАЦИИ
 import { getPets, createPet, updatePet, addToPetWishlist, addPetValidation, updatePetValidation, addToPetWishlistValidation, uploadPetPhoto, uploadDocument } from "../function/controller/profile/petsController";
 import { createOrderValidation, createOrder, updateOrderStatusValidation, switchOrderStatus, removeOrder, getOrders } from "../function/controller/profile/ordersController";
 import { updateProfileValidation, updateProfile, getProfile, logout } from "../function/controller/profile/profileController";
@@ -38,9 +38,10 @@ router.get('/products/:id', getProductDetails);
 router.get('/categories', getCategories);
 router.get('/types', getTypes);
 
-// Protected user routes
+// Protected user routes — favorites
 router.get('/favorites', protect, getFavorites);
-router.post('/favorites/:productId', protect, toggleFavorite);
+// ← ИСПРАВЛЕНО: добавлена toggleFavoriteValidation
+router.post('/favorites/:productId', protect, toggleFavoriteValidation, toggleFavorite);
 
 router.get('/pets', protect, getPets);
 router.post('/pets', protect, addPetValidation, createPet);
@@ -61,14 +62,9 @@ router.post('/logout', protect, logout);
 // Admin routes — products management
 router.get('/admin/products', protect, requireAdmin, getAdminProducts);
 router.get('/admin/products/:id', protect, requireAdmin, getAdminProductById);
-
-// ← КРИТИЧНО: multer парсит multipart/form-data в req.body и req.files
 router.post('/admin/products', protect, requireAdmin, productMultipleUpload.array('images', 10), createAdminProduct);
-
 router.put('/admin/products/:id', protect, requireAdmin, updateAdminProduct);
 router.delete('/admin/products/:id', protect, requireAdmin, deleteAdminProduct);
-
-// Image management routes
 router.post('/admin/products/:id/images', protect, requireAdmin, productMultipleUpload.array('images', 10), uploadProductImages);
 router.delete('/admin/products/:id/images', protect, requireAdmin, removeProductImage);
 router.patch('/admin/products/:id/main-image', protect, requireAdmin, setMainImage);
