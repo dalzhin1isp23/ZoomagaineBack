@@ -1,17 +1,42 @@
 import express from 'express';
 import { protect, requireAdmin } from '../function/middleware/middleware';
-import { petUpload, productUpload, productMultipleUpload } from '../function/middleware/upload';
+import { 
+  petUpload, 
+  productUpload, 
+  productMultipleUpload,
+  userAvatarUpload,
+  vetDocUpload
+} from '../function/middleware/upload';
 
+import { uploadAvatar, removeAvatar } from '../function/controller/profile/profileController';
 import { register, login, getMe, assignRole, registerValidation, loginValidation } from '../function/controller/profile/authController';
-import { toggleFavorite, getFavorites, toggleFavoriteValidation } from "../function/controller/profile/favoritesController"; // ← ИМПОРТ ВАЛИДАЦИИ
-import { getPets, createPet, updatePet, addToPetWishlist, addPetValidation, updatePetValidation, addToPetWishlistValidation, uploadPetPhoto, uploadDocument } from "../function/controller/profile/petsController";
-import { createOrderValidation, createOrder, updateOrderStatusValidation, switchOrderStatus, removeOrder, getOrders } from "../function/controller/profile/ordersController";
+import { toggleFavorite, getFavorites, toggleFavoriteValidation } from "../function/controller/profile/favoritesController"; 
+import { 
+  getPets, 
+  createPet, 
+  updatePet, 
+  addToPetWishlist, 
+  addPetValidation, 
+  updatePetValidation, 
+  addToPetWishlistValidation, 
+  uploadPetPhoto, 
+  uploadDocument 
+} from "../function/controller/profile/petsController";
+import { 
+  createOrderValidation, 
+  createOrder, 
+  updateOrderStatusValidation,  
+  switchOrderStatus, 
+  removeOrder, 
+  getOrders,
+  getOrderById,
+  uploadVetDocument 
+} from "../function/controller/profile/ordersController";
 import { updateProfileValidation, updateProfile, getProfile, logout } from "../function/controller/profile/profileController";
 import { getProducts } from '../function/controller/product/productController';
 import { getProductDetails } from '../function/controller/product/productDetailController';
 import { getCategories } from '../function/controller/product/categoryController';
 import { getTypes } from '../function/controller/product/typeController';
-
 import { 
   getAdminProducts, 
   getAdminProductById, 
@@ -39,8 +64,8 @@ router.get('/types', getTypes);
 
 
 router.get('/favorites', protect, getFavorites);
-
 router.post('/favorites/:productId', protect, toggleFavoriteValidation, toggleFavorite);
+
 
 router.get('/pets', protect, getPets);
 router.post('/pets', protect, addPetValidation, createPet);
@@ -54,10 +79,20 @@ router.post('/orders', protect, createOrderValidation, createOrder);
 router.patch('/orders/:orderId/status', protect, updateOrderStatusValidation, switchOrderStatus);
 router.delete('/orders/:orderId', protect, removeOrder);
 
+
+router.post(
+  '/orders/:orderId/vet-document', 
+  protect, 
+  vetDocUpload.single('document'), 
+  uploadVetDocument
+);
+
+
 router.get('/profile', protect, getProfile);
 router.patch('/profile', protect, updateProfileValidation, updateProfile);
 router.post('/logout', protect, logout);
-
+router.patch('/profile/avatar', protect, userAvatarUpload.single('avatar'), uploadAvatar);
+router.delete('/profile/avatar', protect, removeAvatar);
 
 router.get('/admin/products', protect, requireAdmin, getAdminProducts);
 router.get('/admin/products/:id', protect, requireAdmin, getAdminProductById);

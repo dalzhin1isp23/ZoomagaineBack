@@ -16,7 +16,7 @@ const validateLogin = (login: string): string | null => {
 
 export const getUserProfile = async (userId: string) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Неверный ID пользователя', 400);
-  const user = await Users.findById(userId).select('phone mail notifications status').lean();
+  const user = await Users.findById(userId).select('phone mail avatar notifications status').lean();
   if (!user) throw new AppError('Пользователь не найден', 404);
   const auth = await Authorithation.findOne({ user: userId }).select('login isVerified').lean();
   return { ...user, login: auth?.login || '', isVerified: auth?.isVerified || false };
@@ -24,7 +24,7 @@ export const getUserProfile = async (userId: string) => {
 
 export const updateUserProfile = async (userId: string, updateData: any) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Неверный ID пользователя', 400);
-  const currentUser = await Users.findById(userId).select('phone mail').lean();
+  const currentUser = await Users.findById(userId).select('phone mail avatar').lean();
   const currentAuth = await Authorithation.findOne({ user: userId }).select('login').lean();
   if (!currentUser || !currentAuth) throw new AppError('Пользователь не найден', 404);
 
@@ -72,16 +72,33 @@ export const updateUserProfile = async (userId: string, updateData: any) => {
   let updatedAuth = currentAuth;
 
   if (Object.keys(userSafeData).length > 0) {
-    updatedUser = await Users.findByIdAndUpdate(userId, { $set: userSafeData }, { new: true, runValidators: true, select: 'phone mail notifications status', lean: true });
+    updatedUser = await Users.findByIdAndUpdate(
+      userId, 
+      { $set: userSafeData }, 
+      { 
+        new: true, 
+        runValidators: true, 
+        select: 'phone mail avatar notifications status', 
+        lean: true 
+      }
+    );
     if (!updatedUser) throw new AppError('Не удалось обновить профиль', 500);
   }
 
   if (needsAuthUpdate) {
-    updatedAuth = await Authorithation.findOneAndUpdate({ user: userId }, { $set: authSafeData }, { new: true, runValidators: true, select: 'login isVerified', lean: true });
+    updatedAuth = await Authorithation.findOneAndUpdate(
+      { user: userId }, 
+      { $set: authSafeData }, 
+      { new: true, runValidators: true, select: 'login isVerified', lean: true }
+    );
     if (!updatedAuth) throw new AppError('Не удалось обновить логин', 500);
   }
 
-  return { ...updatedUser, login: updatedAuth?.login || currentAuth.login, isVerified: updatedAuth?.isVerified || currentAuth.isVerified };
+  return { 
+    ...updatedUser, 
+    login: updatedAuth?.login || currentAuth.login, 
+    isVerified: updatedAuth?.isVerified || currentAuth.isVerified 
+  };
 };
 
 export const getPets = async (userId: string) => {
@@ -101,7 +118,6 @@ export const petAdd = async (
   folderColor?: string
 ) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Неверный ID пользователя', 400);
-  
   const pet = new Pet({
     name,
     animal,
@@ -113,7 +129,6 @@ export const petAdd = async (
     folderColor: folderColor || '#234cd3',
     owner: userId
   });
-  
   return pet.save();
 };
 
@@ -141,10 +156,8 @@ export const favAddPet = async (petId: string, productId: string, reason?: strin
   return pet;
 };
 
-
 export const getFavorites = async (userId: string) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Неверный ID пользователя', 400);
-  
   const favorites = await Lovers.find({ user: userId })
     .populate({
       path: 'product',
@@ -156,7 +169,6 @@ export const getFavorites = async (userId: string) => {
     })
     .sort({ createdAt: -1 })
     .lean();
-
   return favorites.map((fav: any) => fav.product).filter(Boolean);
 };
 
@@ -164,34 +176,35 @@ export const favoriteToggle = async (userId: string, productId: string) => {
   if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(productId)) {
     throw new AppError('Неверный ID', 400);
   }
-  
-
   const product = await Products.findById(productId);
-  if (!product) {
-    throw new AppError('Товар не найден', 404);
-  }
-  
-
+  if (!product) throw new AppError('Товар не найден', 404);
   const existing = await Lovers.findOne({ user: userId, product: productId });
-  
   if (existing) {
-    
     await Lovers.findByIdAndDelete(existing._id);
   } else {
-
     await Lovers.create({ user: userId, product: productId });
   }
-  
- 
   return getFavorites(userId);
 };
 
 export const getOrders = async (userId: string) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Неверный ID пользователя', 400);
-  return Orders.find({ user: userId }).populate('products.product', 'name price photoUrl').populate('pet', 'name animal photoUrl').sort({ createdAt: -1 }).lean();
+  return Orders.find({ user: userId })
+    .populate('products.product', 'name price photoUrl')
+    .populate('pet', 'name animal photoUrl')
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
-export const orderAdd = async (userId: string, products: any[], sum: number, adressPoint: string, dateArrivedPoint?: Date, dateSending?: Date, dateFinal?: Date) => {
+export const orderAdd = async (
+  userId: string, 
+  products: any[], 
+  sum: number, 
+  adressPoint: string, 
+  dateArrivedPoint?: Date, 
+  dateSending?: Date, 
+  dateFinal?: Date
+) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Неверный ID пользователя', 400);
   const order = new Orders({ user: userId, products, sum, adressPoint, dateArrivedPoint, dateSending, dateFinal });
   return order.save();
@@ -215,14 +228,44 @@ export const orderRemove = async (orderId: string) => {
 
 export const uploadPhotoService = async (petId: string, userId: string, fileUrl: string) => {
   if (!mongoose.Types.ObjectId.isValid(petId)) throw new AppError('Неверный ID питомца', 400);
-  const pet = await Pet.findOneAndUpdate({ _id: petId, owner: userId }, { photoUrl: fileUrl }, { new: true }).lean();
+  const pet = await Pet.findOneAndUpdate(
+    { _id: petId, owner: userId }, 
+    { photoUrl: fileUrl }, 
+    { new: true }
+  ).lean();
   if (!pet) throw new AppError('Питомец не найден', 404);
   return pet;
 };
 
 export const uploadDocumentService = async (petId: string, userId: string, fileUrl: string, title: string, fileType?: string) => {
   if (!mongoose.Types.ObjectId.isValid(petId)) throw new AppError('Неверный ID питомца', 400);
-  const pet = await Pet.findOneAndUpdate({ _id: petId, owner: userId }, { $push: { documents: { title, fileUrl, fileType, uploadedAt: new Date(), isVerified: false } } }, { new: true }).lean();
+  const pet = await Pet.findOneAndUpdate(
+    { _id: petId, owner: userId }, 
+    { $push: { documents: { title, fileUrl, fileType, uploadedAt: new Date(), isVerified: false } } }, 
+    { new: true }
+  ).lean();
   if (!pet) throw new AppError('Питомец не найден', 404);
   return pet;
+};
+
+export const uploadUserAvatar = async (userId: string, fileUrl: string) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Неверный ID пользователя', 400);
+  const user = await Users.findByIdAndUpdate(
+    userId,
+    { avatar: fileUrl },
+    { new: true, runValidators: true }
+  ).select('phone mail avatar notifications status').lean();
+  if (!user) throw new AppError('Пользователь не найден', 404);
+  return user;
+};
+
+export const removeUserAvatar = async (userId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Неверный ID пользователя', 400);
+  const user = await Users.findByIdAndUpdate(
+    userId,
+    { avatar: null },
+    { new: true, runValidators: true }
+  ).select('phone mail avatar notifications status').lean();
+  if (!user) throw new AppError('Пользователь не найден', 404);
+  return user;
 };

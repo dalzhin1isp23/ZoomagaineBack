@@ -55,3 +55,52 @@ export const petUpload = multer({
     cb(null, allowed.includes(file.mimetype) ? true : new AppError('Неподдерживаемый формат файла', 400));
   }
 });
+
+const USER_UPLOAD_DIR = path.join(__dirname, '../../../uploads/avatars');
+
+if (!fs.existsSync(USER_UPLOAD_DIR)) fs.mkdirSync(USER_UPLOAD_DIR, { recursive: true });
+
+const userStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, USER_UPLOAD_DIR),
+  filename: (_req, file, cb) => {
+    const uniqueName = `avatar-${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  }
+});
+
+export const userAvatarUpload = multer({ 
+  storage: userStorage, 
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    cb(null, allowed.includes(file.mimetype) ? true : new AppError('Неподдерживаемый формат. Разрешены только изображения', 400));
+  }
+});
+
+const vetDocStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const dir = path.join(__dirname, '../../../uploads/orders/vet-docs');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueName = `vet-${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  }
+});
+
+export const vetDocUpload = multer({ 
+  storage: vetDocStorage, 
+  limits: { fileSize: 5 * 1024 * 1024 }, 
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new AppError('Разрешены только изображения (JPG, PNG, WebP)', 400));
+    }
+  }
+});
+

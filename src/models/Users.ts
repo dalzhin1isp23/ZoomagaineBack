@@ -3,6 +3,7 @@ const { Schema, model } = mongoose;
 
 const userSchema = new Schema({
   phone: String,
+  avatar: String,  
   role: { 
     type: Schema.Types.ObjectId,
     ref: "Roles",
@@ -18,7 +19,7 @@ const userSchema = new Schema({
     lowercase: true,
     trim: true
   },
-    notifications: {
+  notifications: {
     discounts: { type: Boolean, default: true } 
   }
 }, { timestamps: true });
