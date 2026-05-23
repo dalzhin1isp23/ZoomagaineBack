@@ -18,28 +18,35 @@ export interface ProductQueryParams {
 export class ProductService {
   async getProducts(params: ProductQueryParams) {
     const page = Math.max(1, Number(params.page) || 1);
-    const limit = Math.min(100, Math.max(1, Number(params.limit) || 9));
+    const limit = Math.min(100, Math.max(1, Number(params.limit) || 12));
     const skip = (page - 1) * limit;
 
     const filter: FilterQuery<any> = {};
 
     if (params.category) {
-      if (mongoose.Types.ObjectId.isValid(String(params.category))) {
-        filter.category = params.category;
+      const catVal = String(params.category).trim();
+      if (mongoose.Types.ObjectId.isValid(catVal)) {
+        filter.category = catVal;
       } else {
-        const Category = mongoose.model('Category');
-        const cat = await Category.findOne({ name: new RegExp(String(params.category), 'i') });
-        if (cat) filter.category = cat._id;
+        try {
+          const Category = mongoose.model('Category');
+          const cat = await Category.findOne({ name: { $regex: `^${catVal}$`, $options: 'i' } });
+          if (cat) filter.category = cat._id;
+        } catch {  }
       }
     }
 
+ 
     if (params.type) {
-      if (mongoose.Types.ObjectId.isValid(String(params.type))) {
-        filter.type = params.type;
+      const typeVal = String(params.type).trim();
+      if (mongoose.Types.ObjectId.isValid(typeVal)) {
+        filter.type = typeVal;
       } else {
-        const Types = mongoose.model('Types');
-        const typ = await Types.findOne({ name: new RegExp(String(params.type), 'i') });
-        if (typ) filter.type = typ._id;
+        try {
+          const Types = mongoose.model('Types');
+          const typ = await Types.findOne({ name: { $regex: `^${typeVal}$`, $options: 'i' } });
+          if (typ) filter.type = typ._id;
+        } catch {  }
       }
     }
 
@@ -50,22 +57,29 @@ export class ProductService {
     }
 
     if (params.inStock === 'true') filter.remains = { $gt: 0 };
+    else if (params.inStock === 'false') filter.remains = { $lte: 0 };
+
     if (params.hasDiscount === 'true') filter.discount = { $gt: 0 };
 
-    if (params.search) {
-      filter.name = { $regex: String(params.search), $options: 'i' };
+    if (params.search && String(params.search).trim()) {
+      const term = String(params.search).trim();
+      filter.$or = [
+        { name: { $regex: term, $options: 'i' } },
+        { description: { $regex: term, $options: 'i' } }
+      ];
     }
 
-    const sortMap: Record<string, string> = {
-      'price': 'price',
-      '-price': '-price',
-      '-createdAt': '-_id',
-      'name': 'name',
-      '-name': '-name',
-      'newest': '-_id',
-      'popularity': '-_id',
-    };
-    const sortOption = sortMap[String(params.sort)] || '-_id';
+    let sortOption: Record<string, 1 | -1> = { _id: -1 };
+    const sortStr = String(params.sort).toLowerCase();
+
+    switch (sortStr) {
+      case 'price-asc':  sortOption = { price: 1 }; break;
+      case 'price-desc': sortOption = { price: -1 }; break;
+      case 'newest':     sortOption = { createdAt: -1 }; break;
+      case 'popularity': 
+      case 'rating':     sortOption = { rating: -1, reviewCount: -1 }; break;
+      default:           sortOption = { _id: -1 };
+    }
 
     const [products, total] = await Promise.all([
       Products.find(filter)
@@ -81,7 +95,7 @@ export class ProductService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-       products,
+      products,
       pagination: {
         total,
         page,

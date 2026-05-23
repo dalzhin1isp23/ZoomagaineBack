@@ -12,25 +12,13 @@ import { uploadAvatar, removeAvatar } from '../function/controller/profile/profi
 import { register, login, getMe, assignRole, registerValidation, loginValidation } from '../function/controller/profile/authController';
 import { toggleFavorite, getFavorites, toggleFavoriteValidation } from "../function/controller/profile/favoritesController"; 
 import { 
-  getPets, 
-  createPet, 
-  updatePet, 
-  addToPetWishlist, 
-  addPetValidation, 
-  updatePetValidation, 
-  addToPetWishlistValidation, 
-  uploadPetPhoto, 
-  uploadDocument 
+  getPets, createPet, updatePet, addToPetWishlist, 
+  addPetValidation, updatePetValidation, addToPetWishlistValidation, 
+  uploadPetPhoto, uploadDocument 
 } from "../function/controller/profile/petsController";
 import { 
-  createOrderValidation, 
-  createOrder, 
-  updateOrderStatusValidation,  
-  switchOrderStatus, 
-  removeOrder, 
-  getOrders,
-  getOrderById,
-  uploadVetDocument 
+  createOrderValidation, createOrder, updateOrderStatusValidation,  
+  switchOrderStatus, removeOrder, getOrders, getOrderById, uploadVetDocument 
 } from "../function/controller/profile/ordersController";
 import { updateProfileValidation, updateProfile, getProfile, logout } from "../function/controller/profile/profileController";
 import { getProducts } from '../function/controller/product/productController';
@@ -38,46 +26,38 @@ import { getProductDetails } from '../function/controller/product/productDetailC
 import { getCategories } from '../function/controller/product/categoryController';
 import { getTypes } from '../function/controller/product/typeController';
 import { 
-  getAdminProducts, 
-  getAdminProductById, 
-  createAdminProduct, 
-  updateAdminProduct, 
-  deleteAdminProduct,
-  uploadProductImages,
-  removeProductImage,
-  setMainImage
+  getAdminProducts, getAdminProductById, createAdminProduct, 
+  updateAdminProduct, deleteAdminProduct, uploadProductImages, 
+  removeProductImage, setMainImage
 } from '../function/controller/admin/productController';
+import { 
+  getAdminOrders, getAdminOrderById, updateAdminOrderStatus, 
+  verifyVetDocuments, deleteAdminOrder, getAdminOrdersValidation, 
+  updateAdminOrderStatusValidation, verifyVetDocumentsValidation
+} from '../function/controller/admin/orderController';
+import { 
+  getAdminUsers, updateUserRole, getAdminUsersValidation, updateUserRoleValidation
+} from '../function/controller/admin/userController';
 
 import { 
-  getAdminOrders, 
-  getAdminOrderById, 
-  updateAdminOrderStatus, 
-  verifyVetDocuments,
-  deleteAdminOrder,
-  getAdminOrdersValidation,
-  updateAdminOrderStatusValidation,
-  verifyVetDocumentsValidation
-} from '../function/controller/admin/orderController';
-
+  createReview, getReviews, updateReview, deleteReview, markHelpful,
+  createReviewValidation, updateReviewValidation, getReviewsValidation
+} from '../function/controller/product/reviuwController'; 
 
 const router = express.Router();
-
 
 router.post('/auth/register', registerValidation, register);
 router.post('/auth/login', loginValidation, login);
 router.get('/auth/me', protect, getMe);
 router.post('/auth/assign-role', protect, requireAdmin, assignRole);
 
-
 router.get('/products', getProducts);
 router.get('/products/:id', getProductDetails);
 router.get('/categories', getCategories);
 router.get('/types', getTypes);
 
-
 router.get('/favorites', protect, getFavorites);
 router.post('/favorites/:productId', protect, toggleFavoriteValidation, toggleFavorite);
-
 
 router.get('/pets', protect, getPets);
 router.post('/pets', protect, addPetValidation, createPet);
@@ -90,15 +70,7 @@ router.get('/orders', protect, getOrders);
 router.post('/orders', protect, createOrderValidation, createOrder);
 router.patch('/orders/:orderId/status', protect, updateOrderStatusValidation, switchOrderStatus);
 router.delete('/orders/:orderId', protect, removeOrder);
-
-
-router.post(
-  '/orders/:orderId/vet-document', 
-  protect, 
-  vetDocUpload.single('document'), 
-  uploadVetDocument
-);
-
+router.post('/orders/:orderId/vet-document', protect, vetDocUpload.single('document'), uploadVetDocument);
 
 router.get('/profile', protect, getProfile);
 router.patch('/profile', protect, updateProfileValidation, updateProfile);
@@ -120,5 +92,14 @@ router.get('/admin/orders/:orderId', protect, requireAdmin, getAdminOrderById);
 router.patch('/admin/orders/:orderId/status', protect, requireAdmin, updateAdminOrderStatusValidation, updateAdminOrderStatus);
 router.patch('/admin/orders/:orderId/vet-verify', protect, requireAdmin, verifyVetDocumentsValidation, verifyVetDocuments);
 router.delete('/admin/orders/:orderId', protect, requireAdmin, deleteAdminOrder);
+
+router.get('/admin/users', protect, requireAdmin, getAdminUsersValidation, getAdminUsers);
+router.patch('/admin/users/:userId/role', protect, requireAdmin, updateUserRoleValidation, updateUserRole);
+
+router.get('/products/:productId/reviews', getReviewsValidation, getReviews);
+router.post('/reviews', protect, createReviewValidation, createReview);
+router.patch('/reviews/:reviewId', protect, updateReviewValidation, updateReview);
+router.delete('/reviews/:reviewId', protect, deleteReview);
+router.post('/reviews/:reviewId/helpful', protect, markHelpful);
 
 export default router;
