@@ -38,7 +38,7 @@ const orderSchema = new Schema({
   status: {
     type: Schema.Types.ObjectId,
     ref: "Status",
-    default: "6a0d78968c9a243088c4b251" 
+    default: "6a0d78968c9a243088c4b24b"
   },
   dateArrivedPoint: Date,
   dateSending: Date,

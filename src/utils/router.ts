@@ -48,6 +48,18 @@ import {
   setMainImage
 } from '../function/controller/admin/productController';
 
+import { 
+  getAdminOrders, 
+  getAdminOrderById, 
+  updateAdminOrderStatus, 
+  verifyVetDocuments,
+  deleteAdminOrder,
+  getAdminOrdersValidation,
+  updateAdminOrderStatusValidation,
+  verifyVetDocumentsValidation
+} from '../function/controller/admin/orderController';
+
+
 const router = express.Router();
 
 
@@ -102,5 +114,11 @@ router.delete('/admin/products/:id', protect, requireAdmin, deleteAdminProduct);
 router.post('/admin/products/:id/images', protect, requireAdmin, productMultipleUpload.array('images', 10), uploadProductImages);
 router.delete('/admin/products/:id/images', protect, requireAdmin, removeProductImage);
 router.patch('/admin/products/:id/main-image', protect, requireAdmin, setMainImage);
+
+router.get('/admin/orders', protect, requireAdmin, getAdminOrdersValidation, getAdminOrders);
+router.get('/admin/orders/:orderId', protect, requireAdmin, getAdminOrderById);
+router.patch('/admin/orders/:orderId/status', protect, requireAdmin, updateAdminOrderStatusValidation, updateAdminOrderStatus);
+router.patch('/admin/orders/:orderId/vet-verify', protect, requireAdmin, verifyVetDocumentsValidation, verifyVetDocuments);
+router.delete('/admin/orders/:orderId', protect, requireAdmin, deleteAdminOrder);
 
 export default router;
