@@ -44,6 +44,8 @@ import {
   createReviewValidation, updateReviewValidation, getReviewsValidation
 } from '../function/controller/product/reviuwController'; 
 
+import {getAdminDashboard} from '../function/controller/admin/adminDashboardController';
+
 const router = express.Router();
 
 router.post('/auth/register', registerValidation, register);
@@ -101,5 +103,7 @@ router.post('/reviews', protect, createReviewValidation, createReview);
 router.patch('/reviews/:reviewId', protect, updateReviewValidation, updateReview);
 router.delete('/reviews/:reviewId', protect, deleteReview);
 router.post('/reviews/:reviewId/helpful', protect, markHelpful);
+
+router.get('/admin/dashboard', protect, requireAdmin, getAdminDashboard);
 
 export default router;
